@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>偏好設定 - 瀏覽器密碼鎖定助手</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="stars"></div>
+  <div class="glowing-orb purple"></div>
+  <div class="glowing-orb blue"></div>
+
+  <!-- 1. 設定存取權限驗證 -->
+  <div id="auth-panel" class="container auth-container">
+    <div class="logo-area">
+      <span class="lock-shield">🛡️</span>
+    </div>
+    <h2>進入偏好設定</h2>
+    <p class="subtitle">為了安全起見，請先輸入您的解鎖密碼以進入設定頁面。</p>
+    
+    <form id="auth-form">
+      <div class="input-group">
+        <div class="input-wrapper">
+          <span class="icon">🔒</span>
+          <input type="password" id="auth-password" required placeholder="請輸入密碼" autofocus>
+          <span class="toggle-password" data-target="auth-password">👁️</span>
+        </div>
+      </div>
+      <div id="auth-error" class="error-text hidden">密碼錯誤，請再試一次</div>
+      <button type="submit" class="btn btn-primary">驗證密碼</button>
+    </form>
+  </div>
+
+  <!-- 2. 設定控制台頁面 (驗證通過後顯示) -->
+  <div id="settings-panel" class="container settings-container hidden">
+    <header class="settings-header">
+      <div class="header-logo">
+        <span class="logo-emoji">⚙️</span>
+        <div class="header-text">
+          <h1>偏好設定</h1>
+          <p>配置安全鎖定、有效時效與救援機制</p>
+        </div>
+      </div>
+      <button id="btn-close-settings" class="btn-text">關閉頁面</button>
+    </header>
+
+    <div class="settings-layout">
+      <!-- 側邊選單 -->
+      <nav class="settings-nav">
+        <a href="#section-duration" class="nav-item active">⏳ 登入時效設定</a>
+        <a href="#section-password" class="nav-item">🔒 變更密碼密語</a>
+        <a href="#section-recovery" class="nav-item">✉️ Email 救援配置</a>
+        <a href="#section-autoreset" class="nav-item">🛡️ 自動重設安全閥</a>
+        <a href="#section-period" class="nav-item">📅 特定時段鎖定</a>
+      </nav>
+
+      <!-- 主要內容區 -->
+      <main class="settings-content">
+        <!-- 區段 1：時效設定 -->
+        <section id="section-duration" class="settings-section">
+          <h2>登入有效時效</h2>
+          <p class="section-desc">設定解鎖一次後，下次需要再次輸入密碼的時間間隔。</p>
+          
+          <div class="radio-group">
+            <label class="radio-card">
+              <input type="radio" name="durationMode" value="startup" checked>
+              <div class="radio-content">
+                <span class="radio-title">每次重新開啟瀏覽器</span>
+                <span class="radio-desc">當關閉所有 Chrome 視窗後重新啟動時，立即要求輸入密碼。</span>
+              </div>
+            </label>
+
+            <label class="radio-card">
+              <input type="radio" name="durationMode" value="day">
+              <div class="radio-content">
+                <span class="radio-title">今天之內只需要輸入一次</span>
+                <span class="radio-desc">解鎖後直到今天晚上 23:59 分前都不需要再次輸入。</span>
+              </div>
+            </label>
+
+            <label class="radio-card">
+              <input type="radio" name="durationMode" value="untilTime">
+              <div class="radio-content">
+                <span class="radio-title">到每日設定的時間點</span>
+                <span class="radio-desc">設定每日解鎖的截止時間，到了該時間點會自動鎖定。</span>
+                <div class="duration-input-wrapper hidden" id="wrapper-untilTime">
+                  <input type="time" id="untilTimeValue" class="input-small">
+                </div>
+              </div>
+            </label>
+
+            <label class="radio-card">
+              <input type="radio" name="durationMode" value="custom">
+              <div class="radio-content">
+                <span class="radio-title">自訂有效時間</span>
+                <span class="radio-desc">在解鎖後的指定天數、時數或分鐘數後自動鎖定。</span>
+                <div class="duration-input-wrapper hidden" id="wrapper-custom">
+                  <div class="custom-time-inputs">
+                    <input type="number" id="custom-days" min="0" max="30" value="0" class="input-mini"> <span class="unit">天</span>
+                    <input type="number" id="custom-hours" min="0" max="23" value="0" class="input-mini"> <span class="unit">小時</span>
+                    <input type="number" id="custom-minutes" min="0" max="59" value="0" class="input-mini"> <span class="unit">分鐘</span>
+                  </div>
+                  <span class="quick-selects-title">⚡ 快速設定</span>
+                  <div class="quick-selects">
+                    <button type="button" class="btn-quick" data-time="5">5 分鐘</button>
+                    <button type="button" class="btn-quick" data-time="10">10 分鐘</button>
+                    <button type="button" class="btn-quick" data-time="30">30 分鐘</button>
+                    <button type="button" class="btn-quick" data-time="60">1 小時</button>
+                  </div>
+                </div>
+              </div>
+            </label>
+          </div>
+          <button type="button" id="btn-save-duration" class="btn btn-primary btn-save">儲存時效設定</button>
+        </section>
+
+        <!-- 區段 2：密碼設定 -->
+        <section id="section-password" class="settings-section hidden">
+          <h2>變更密碼與密語</h2>
+          <p class="section-desc">修改您目前使用的瀏覽器解鎖密碼，或更新忘記密碼時用來還原的密語。</p>
+
+          <form id="change-password-form">
+            <div class="input-group">
+              <label for="current-password">當前密碼</label>
+              <input type="password" id="current-password" required placeholder="請輸入舊密碼">
+            </div>
+
+            <div class="input-group">
+              <label for="new-password-val">新密碼</label>
+              <input type="password" id="new-password-val" required placeholder="請輸入新密碼">
+            </div>
+
+            <div class="input-group">
+              <label for="new-password-confirm">確認新密碼</label>
+              <input type="password" id="new-password-confirm" required placeholder="請再次輸入新密碼">
+            </div>
+
+            <div class="input-group">
+              <label for="change-passphrase">安全密語（請記好此密語，可用來查詢此密碼）</label>
+              <input type="text" id="change-passphrase" required placeholder="請輸入新的安全密語">
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-save">變更密碼</button>
+          </form>
+        </section>
+
+        <!-- 區段 3：Email 救援 -->
+        <section id="section-recovery" class="settings-section hidden">
+          <h2>Email 救援配置</h2>
+          <p class="section-desc">設定用來發送重設驗證碼的信箱。本機制需搭配 Google Apps Script，提供安全自主的發信通道。</p>
+
+          <div class="input-group">
+            <label for="settings-email">救援 Email（選填）</label>
+            <input type="email" id="settings-email" placeholder="例如：yourname@gmail.com（選填）">
+          </div>
+
+          <div class="input-group">
+            <div class="flex-row" style="justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <label for="settings-gas-url" style="margin-bottom: 0;">Google Apps Script Web App URL</label>
+              <div class="flex-row">
+                <button type="button" id="btn-edit-gas-url" class="btn-quick" style="padding: 4px 8px; font-size: 11px; margin-top: 0;">🔓 修改網址</button>
+              </div>
+            </div>
+            <input type="url" id="settings-gas-url" placeholder="貼上您部署的 GAS 網頁應用程式 URL" readonly>
+            <p class="helper-text">
+              請使用套件頁面的說明中的程式碼部署於 GAS，並取得網址。若不填寫此欄位，您將無法在鎖定畫面點擊「Email 救援」，僅能使用「密語救援」。
+            </p>
+          </div>
+
+          <div class="btn-row">
+            <button type="button" id="btn-save-email" class="btn btn-primary btn-save">儲存 Email 配置</button>
+            <button type="button" id="btn-test-email" class="btn btn-secondary btn-save">發送測試信</button>
+          </div>
+          <div id="email-test-status" class="info-text hidden"></div>
+        </section>
+
+        <!-- 區段 4：自動重設 -->
+        <section id="section-autoreset" class="settings-section hidden">
+          <h2>自動重設安全閥</h2>
+          <p class="section-desc">若您經常忘記密碼，可開啟此機制。在持續鎖定指定天數後，套件將自動移除鎖定並重設設定，避免永久失去權限。</p>
+
+          <div class="toggle-card">
+            <div class="toggle-info">
+              <span class="toggle-title">啟用忘記密碼自動重設</span>
+              <span class="toggle-desc">鎖定狀態會記錄起始時間。若連續未成功解鎖達到天數，鎖定會被移除。</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="settings-autoreset-toggle">
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <div class="input-group hidden" id="wrapper-autoreset-days">
+            <label for="settings-autoreset-days">指定自動重設所需天數（建議設定 3 天以上）</label>
+            <div class="flex-row">
+              <input type="number" id="settings-autoreset-days" min="1" max="30" value="3" class="input-small">
+              <span class="unit">天</span>
+            </div>
+          </div>
+
+          <button type="button" id="btn-save-autoreset" class="btn btn-primary btn-save">儲存自動重設設定</button>
+        </section>
+
+        <!-- 區段 5：特定時段鎖定 -->
+        <section id="section-period" class="settings-section hidden">
+          <h2>特定時段鎖定</h2>
+          <p class="section-desc">在您指定的日期與時間區間內，重新啟動瀏覽器或開啟首個視窗時，將會強制要求輸入密碼。</p>
+
+          <div class="toggle-card">
+            <div class="toggle-info">
+              <span class="toggle-title">啟用特定時段鎖定</span>
+              <span class="toggle-desc">啟用後，於下方設定的起訖時間內，系統將強制進行鎖定防護。</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="settings-period-toggle">
+              <span class="slider round"></span>
+            </label>
+          </div>
+
+          <div class="input-group" id="wrapper-period-time">
+            <div class="flex-row" style="gap: 16px; align-items: flex-start;">
+              <div class="input-group">
+                <label for="settings-period-start">開始時間</label>
+                <input type="datetime-local" id="settings-period-start">
+              </div>
+              <div style="align-self: center; margin-top: 24px; color: var(--text-secondary);">至</div>
+              <div class="input-group">
+                <label for="settings-period-end">結束時間</label>
+                <input type="datetime-local" id="settings-period-end">
+              </div>
+            </div>
+          </div>
+
+          <button type="button" id="btn-save-period" class="btn btn-primary btn-save">儲存時段設定</button>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <!-- Toast 訊息通知 -->
+  <div id="toast" class="toast hidden">設定已儲存 ⚡</div>
+
+  <!-- 安全驗證彈窗 (Modal) -->
+  <div id="verify-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>🔑 安全驗證</h3>
+      </div>
+      <p class="modal-desc">修改或回復預設發信服務網址，請先輸入您的解鎖密碼進行驗證。</p>
+      <div class="input-group">
+        <input type="password" id="verify-modal-password" placeholder="請輸入解鎖密碼">
+      </div>
+      <div id="verify-modal-error" class="error-text hidden">密碼錯誤，請再試一次</div>
+      <div class="modal-buttons">
+        <button type="button" id="btn-verify-modal-cancel" class="btn btn-secondary">取消</button>
+        <button type="button" id="btn-verify-modal-confirm" class="btn btn-primary">確定</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

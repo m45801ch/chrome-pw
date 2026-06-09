@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>瀏覽器已鎖定</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="lock.css">
+</head>
+<body>
+  <div class="stars"></div>
+  <div class="glowing-orb purple"></div>
+  <div class="glowing-orb blue"></div>
+
+  <div class="container">
+    <!-- 鎖定圖示 -->
+    <div class="logo-area">
+      <div class="pulse-ring"></div>
+      <img src="icon.png" alt="Lock Icon" class="lock-icon">
+    </div>
+
+    <!-- 1. 首次安裝：初始化設定 -->
+    <div id="setup-panel" class="panel hidden">
+      <h2>初始化安全設定</h2>
+      <p class="subtitle">歡迎使用。請設定您的瀏覽器存取密碼與救援方式。</p>
+      
+      <form id="setup-form">
+        <div class="input-group">
+          <label for="setup-password">設定解鎖密碼</label>
+          <div class="input-wrapper">
+            <span class="icon">🔒</span>
+            <input type="password" id="setup-password" required placeholder="請輸入密碼">
+            <span class="toggle-password" data-target="setup-password">👁️</span>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="setup-password-confirm">確認解鎖密碼</label>
+          <div class="input-wrapper">
+            <span class="icon">🛡️</span>
+            <input type="password" id="setup-password-confirm" required placeholder="請再次輸入密碼">
+            <span class="toggle-password" data-target="setup-password-confirm">👁️</span>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="setup-email">救援 Email（選填）</label>
+          <div class="input-wrapper">
+            <span class="icon">✉️</span>
+            <input type="email" id="setup-email" placeholder="例如：yourname@gmail.com（選填）">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label for="setup-passphrase">安全密語（忘記密碼時可直接顯示密碼）</label>
+          <div class="input-wrapper">
+            <span class="icon">🔑</span>
+            <input type="text" id="setup-passphrase" required placeholder="請輸入一段只有您知道的密語">
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">完成初始化</button>
+      </form>
+    </div>
+
+    <!-- 2. 一般解鎖面板 -->
+    <div id="unlock-panel" class="panel hidden">
+      <h2>安全鎖定中</h2>
+      <p class="subtitle">請輸入密碼以解鎖您的 Chrome 瀏覽器</p>
+
+      <!-- 自動解鎖倒數計時器 -->
+      <div id="autoreset-countdown-container" class="countdown-container hidden">
+        <span class="countdown-label">🛡️ 忘記密碼自動安全重設倒數</span>
+        <div class="countdown-timer" id="autoreset-countdown">00天 00時 00分 00秒</div>
+      </div>
+
+      <!-- 登入有效時效顯示 -->
+      <div id="duration-status-container" class="duration-status-container hidden">
+        <span class="duration-status-label">⏳ 當前解鎖時效設定</span>
+        <div class="duration-status-row">
+          <span class="duration-status-value" id="duration-status-value">載入中...</span>
+          <button type="button" id="btn-go-to-settings" class="btn-adjust-settings" title="前往調整設定">⚙️ 調整</button>
+        </div>
+      </div>
+
+      <form id="unlock-form">
+        <div class="input-group">
+          <div class="input-wrapper">
+            <span class="icon">🔒</span>
+            <input type="password" id="unlock-password" required placeholder="請輸入解鎖密碼" autofocus>
+            <span class="toggle-password" data-target="unlock-password">👁️</span>
+          </div>
+        </div>
+        <div id="error-message" class="error-text hidden">密碼錯誤，請再試一次</div>
+        <button type="submit" class="btn btn-primary">立即解鎖</button>
+      </form>
+
+      <div class="options-links">
+        <a href="#" id="link-forgot-email">✉️ Email 驗證重設</a>
+        <span class="divider">|</span>
+        <a href="#" id="link-forgot-passphrase">🔑 輸入密語找回</a>
+      </div>
+    </div>
+
+    <!-- 3. Email 救援面板 -->
+    <div id="email-recovery-panel" class="panel hidden">
+      <h2>Email 驗證救援</h2>
+      <p class="subtitle" id="email-recovery-desc">將發送驗證碼至您的救援信箱</p>
+
+      <!-- 步驟 3A: 發送驗證碼 -->
+      <div id="email-send-step">
+        <button type="button" id="btn-send-code" class="btn btn-secondary">發送救援驗證碼</button>
+        <p class="info-text hidden" id="email-send-info"></p>
+      </div>
+
+      <!-- 步驟 3B: 輸入驗證碼重設 -->
+      <div id="email-verify-step" class="hidden">
+        <div class="input-group">
+          <label for="verification-code">請輸入 6 位數驗證碼</label>
+          <div class="input-wrapper">
+            <span class="icon">🔢</span>
+            <input type="text" id="verification-code" maxlength="6" placeholder="請輸入驗證碼">
+          </div>
+        </div>
+        
+        <div class="input-group">
+          <label for="new-password">新解鎖密碼</label>
+          <div class="input-wrapper">
+            <span class="icon">🔒</span>
+            <input type="password" id="new-password" placeholder="請輸入新密碼">
+          </div>
+        </div>
+
+        <button type="button" id="btn-verify-reset" class="btn btn-primary">驗證並重設密碼</button>
+      </div>
+
+      <div class="options-links">
+        <a href="#" class="link-back-to-unlock">返回密碼解鎖</a>
+      </div>
+    </div>
+
+    <!-- 4. 密語救援面板 -->
+    <div id="passphrase-recovery-panel" class="panel hidden">
+      <h2>安全密語找回密碼</h2>
+      <p class="subtitle">輸入您設定的密語以直接查看密碼</p>
+
+      <div id="passphrase-input-step">
+        <div class="input-group">
+          <div class="input-wrapper">
+            <span class="icon">🔑</span>
+            <input type="text" id="recovery-passphrase" placeholder="請輸入安全密語">
+          </div>
+        </div>
+        <div id="passphrase-error" class="error-text hidden">密語錯誤，請再試一次</div>
+        <button type="button" id="btn-show-password" class="btn btn-primary">顯示當前密碼</button>
+      </div>
+
+      <!-- 顯示密碼結果 -->
+      <div id="passphrase-result-step" class="hidden">
+        <div class="result-box">
+          <p class="result-label">您的密碼為：</p>
+          <h3 id="revealed-password">------</h3>
+        </div>
+        <p class="warning-alert">⚠️ 請牢記您的密碼，並於解鎖後立即登入。</p>
+      </div>
+
+      <div class="options-links">
+        <a href="#" class="link-back-to-unlock">返回密碼解鎖</a>
+      </div>
+    </div>
+
+    <!-- 底部資訊或自動重置提示 -->
+    <div class="footer-info" id="autoreset-status">
+      <!-- 動態填入自動重設剩餘天數 -->
+    </div>
+  </div>
+  <script src="lock.js"></script>
+</body>
+</html>

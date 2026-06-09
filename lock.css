@@ -1,0 +1,451 @@
+/* 瀏覽器密碼鎖定助手 - CSS 樣式表 */
+
+:root {
+  --bg-gradient: linear-gradient(135deg, #f5f3fa 0%, #edeaf4 50%, #f4f6f0 100%);
+  --panel-bg: rgba(255, 255, 255, 0.75);
+  --border-color: rgba(142, 124, 195, 0.18);
+  --primary-gradient: linear-gradient(135deg, #988bc7 0%, #7d6fa9 100%);
+  --secondary-gradient: linear-gradient(135deg, #8fa382 0%, #768a69 100%);
+  --glow-shadow: 0 8px 24px rgba(152, 139, 199, 0.3);
+  --text-primary: #3c354a;
+  --text-secondary: #7b728c;
+  --danger-color: #d15b5b;
+  --success-color: #5c8f67;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Outfit', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg-gradient);
+  color: var(--text-primary);
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+}
+
+/* 背景星空特效 */
+.stars {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(152, 139, 199, 0.12) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 0.6;
+  z-index: 0;
+}
+
+/* 浮動的發光球體 */
+.glowing-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.15;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.glowing-orb.purple {
+  width: 400px;
+  height: 400px;
+  background: #e1d8f5;
+  top: 10%;
+  left: 15%;
+  animation: floatOrb 15s ease-in-out infinite alternate;
+}
+
+.glowing-orb.blue {
+  width: 450px;
+  height: 450px;
+  background: #e3ede0;
+  bottom: 10%;
+  right: 15%;
+  animation: floatOrb 18s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes floatOrb {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+
+  100% {
+    transform: translateY(-50px) scale(1.1);
+  }
+}
+
+/* 主容器 */
+.container {
+  background: var(--panel-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border-color);
+  border-radius: 24px;
+  padding: 40px;
+  width: 450px;
+  max-width: 90%;
+  box-shadow: 0 15px 35px rgba(152, 139, 199, 0.1), 0 0 45px rgba(152, 139, 199, 0.05);
+  z-index: 1;
+  text-align: center;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+/* 標誌區域與呼吸環動畫 */
+.logo-area {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 28px;
+}
+
+.pulse-ring {
+  position: absolute;
+  top: -10%;
+  left: -10%;
+  width: 120%;
+  height: 120%;
+  border-radius: 50%;
+  background: var(--primary-gradient);
+  opacity: 0.15;
+  animation: pulseGlow 3s infinite;
+  z-index: -1;
+}
+
+@keyframes pulseGlow {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.15;
+  }
+
+  50% {
+    transform: scale(1.1);
+    opacity: 0.25;
+  }
+
+  100% {
+    transform: scale(0.9);
+    opacity: 0.15;
+  }
+}
+
+.lock-icon {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* 標題與段落 */
+h2 {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  letter-spacing: 0.5px;
+  background: linear-gradient(to right, #4c3e6d, #8375a3);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 30px;
+  line-height: 1.5;
+}
+
+/* 面板控制 */
+.panel {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* 輸入框組件 */
+.input-group {
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.input-group label {
+  display: block;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-wrapper input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(152, 139, 199, 0.25);
+  border-radius: 12px;
+  padding: 14px 44px;
+  font-size: 15px;
+  color: var(--text-primary);
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.input-wrapper input::placeholder {
+  color: #aca4ba;
+}
+
+.input-wrapper input:focus {
+  background: #ffffff;
+  border-color: #988bc7;
+  box-shadow: 0 0 15px rgba(152, 139, 199, 0.25);
+}
+
+.input-wrapper .icon {
+  position: absolute;
+  left: 16px;
+  font-size: 18px;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+.input-wrapper .toggle-password {
+  position: absolute;
+  right: 16px;
+  font-size: 18px;
+  cursor: pointer;
+  opacity: 0.6;
+  user-select: none;
+  transition: opacity 0.2s;
+}
+
+.input-wrapper .toggle-password:hover {
+  opacity: 1;
+}
+
+/* 按鈕樣式 */
+.btn {
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.3s ease;
+  margin-top: 10px;
+}
+
+.btn-primary {
+  background: var(--primary-gradient);
+  color: #ffffff;
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.2);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--glow-shadow);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  background: var(--secondary-gradient);
+  color: #ffffff;
+  box-shadow: 0 4px 15px rgba(6, 182, 212, 0.2);
+}
+
+.btn-secondary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 25px rgba(6, 182, 212, 0.4);
+}
+
+/* 連結樣式 */
+.options-links {
+  margin-top: 24px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.options-links a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  margin: 0 8px;
+  transition: color 0.2s;
+}
+
+.options-links a:hover {
+  color: #7d6fa9;
+}
+
+.divider {
+  opacity: 0.3;
+}
+
+/* 錯誤提示 */
+.error-text {
+  color: var(--danger-color);
+  font-size: 13px;
+  margin: 8px 0;
+  text-align: left;
+  animation: shake 0.3s ease;
+}
+
+@keyframes shake {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-6px);
+  }
+
+  75% {
+    transform: translateX(6px);
+  }
+}
+
+/* 一般資訊提示 */
+.info-text {
+  font-size: 13px;
+  color: var(--success-color);
+  margin-top: 12px;
+}
+
+/* 顯示密碼結果樣式 */
+.result-box {
+  background: rgba(152, 139, 199, 0.06);
+  border: 1px dashed rgba(152, 139, 199, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+  margin: 20px 0;
+}
+
+.result-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+
+#revealed-password {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #6a59a4;
+}
+
+.warning-alert {
+  font-size: 12px;
+  color: var(--danger-color);
+  margin-top: 10px;
+}
+
+/* 頁尾提示 */
+.footer-info {
+  margin-top: 30px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  border-top: 1px solid rgba(142, 124, 195, 0.18);
+  padding-top: 20px;
+}
+
+/* 自動重設倒數計時器 */
+.countdown-container {
+  background: rgba(217, 155, 130, 0.08);
+  border: 1px solid rgba(217, 155, 130, 0.25);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.countdown-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #b56c49;
+  letter-spacing: 0.5px;
+}
+
+.countdown-timer {
+  font-family: 'Outfit', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: #c97953;
+}
+
+/* 登入有效時效狀態顯示 */
+.duration-status-container {
+  background: rgba(152, 139, 199, 0.06);
+  border: 1px solid rgba(152, 139, 199, 0.25);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.duration-status-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #7b6fa9;
+  letter-spacing: 0.5px;
+}
+
+.duration-status-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #53487a;
+}
+
+.duration-status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.btn-adjust-settings {
+  background: rgba(152, 139, 199, 0.12);
+  border: 1px solid rgba(152, 139, 199, 0.35);
+  color: #7b6fa9;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  outline: none;
+}
+
+.btn-adjust-settings:hover {
+  background: rgba(152, 139, 199, 0.25);
+  border-color: #7d6fa9;
+  color: #ffffff;
+  box-shadow: 0 0 10px rgba(152, 139, 199, 0.3);
+}

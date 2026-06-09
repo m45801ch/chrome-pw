@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "瀏覽器密碼鎖定助手",
+  "version": "1.0.0",
+  "description": "保護您的瀏覽器隱私。啟動時需輸入密碼，支援 Email 救援、安全密語還原、登入有效時間與一鍵鎖定功能。",
+  "permissions": [
+    "storage",
+    "alarms",
+    "tabs",
+    "windows"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "瀏覽器密碼鎖定助手",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "options_page": "options.html",
+  "minimum_chrome_version": "88"
+}

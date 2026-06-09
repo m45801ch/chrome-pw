@@ -1,0 +1,51 @@
+// Google Apps Script (GAS) 救援信件發送服務範本
+// 部署步驟：
+// 1. 瀏覽網頁：https://script.google.com/
+// 2. 建立新專案，將下方所有程式碼貼入編輯器中。
+// 3. 點擊右上角「部署」->「新增部署」。
+// 4. 類型選擇「網頁應用程式」（Web App）。
+// 5. 「誰有權限存取」請務必選擇「任何人」（Anyone）—— 這樣擴充套件才能呼叫它。
+// 6. 點擊「部署」，授予必要的權限（Gmail 發信權限）。
+// 7. 複製產生的「網頁應用程式 URL」，將其貼入此擴充套件設定頁面的 GAS URL 欄位中。
+
+function doPost(e) {
+  try {
+    var params = JSON.parse(e.postData.contents);
+    var email = params.email;
+    var code = params.code;
+    
+    if (!email || !code) {
+      return ContentService.createTextOutput(JSON.stringify({
+        success: false,
+        message: "缺少必要參數 (email 或 code)"
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    var subject = "【瀏覽器密碼鎖定助手】您的救援驗證碼";
+    var body = "您好：\n\n" +
+               "我們收到您重設瀏覽器密碼的請求。\n" +
+               "您的救援驗證碼為：\n\n" +
+               "   " + code + "   \n\n" +
+               "該驗證碼在 10 分鐘內有效。如果您沒有要求此重設，請忽略本信件並確保您的瀏覽器安全。\n\n" +
+               "此郵件為系統自動發送，請勿直接回覆。";
+               
+    GmailApp.sendEmail(email, subject, body);
+    
+    return ContentService.createTextOutput(JSON.stringify({
+      success: true,
+      message: "信件發送成功"
+    })).setMimeType(ContentService.MimeType.JSON);
+    
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      message: "伺服器錯誤: " + err.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// 支援 CORS Options 預檢請求
+function doOptions(e) {
+  return ContentService.createTextOutput("")
+    .setMimeType(ContentService.MimeType.TEXT);
+}
