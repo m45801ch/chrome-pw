@@ -2,6 +2,20 @@
 
 let countdownInterval = null;
 
+// 關閉自身視窗的輔助函式
+function closeSelf() {
+  try {
+    window.close();
+  } catch (e) {
+    chrome.windows.getCurrent((win) => {
+      if (win) {
+        chrome.windows.remove(win.id).catch(() => {});
+      }
+    });
+  }
+}
+
+
 // SHA-256 雜湊計算
 async function sha256(message) {
   const msgBuffer = new TextEncoder().encode(message);
@@ -82,7 +96,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
+  // 監聽解鎖事件或狀態變更，若已解鎖則自動關閉此視窗
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === "local" && changes.locked && changes.locked.newValue === false) {
+      closeSelf();
+    }
+  });
+
+  // 向 Background 註冊鎖定視窗已載入，供重複視窗清理邏輯使用
+  chrome.runtime.sendMessage({ action: "lockWindowLoaded" });
+
   const data = await chrome.storage.local.get([
+    "locked",
     "passwordHash",
     "email",
     "gasUrl",
@@ -92,6 +117,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     "durationMode",
     "durationValue"
   ]);
+
+  // 若已被解鎖且已有密碼，直接關閉視窗（避免重複顯示鎖定頁面）
+  if (data.passwordHash && data.locked === false) {
+    closeSelf();
+    return;
+  }
+
 
   // 預設與防呆數值補償處理
   const resolvedData = {
@@ -248,15 +280,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  // 當鎖定視窗重新獲得焦點時（例如從設定視窗回到鎖定視窗），即時重新加載並更新時效資訊
+  // 當鎖定視窗重新獲得焦點時（例如從設定視窗回到鎖定視窗），即時重新加載並更新時效資訊與解鎖狀態
   window.addEventListener("focus", async () => {
-    const freshData = await chrome.storage.local.get(["durationMode", "durationValue"]);
+    const freshData = await chrome.storage.local.get(["locked", "passwordHash", "durationMode", "durationValue"]);
+    if (freshData.passwordHash && freshData.locked === false) {
+      closeSelf();
+      return;
+    }
     displaySessionDuration({
-      passwordHash: true,
+      passwordHash: !!freshData.passwordHash,
       durationMode: freshData.durationMode,
       durationValue: freshData.durationValue
     });
   });
+
 
   // 6. Email 救援邏輯
   async function setupEmailRecoveryUI() {

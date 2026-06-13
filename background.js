@@ -4,29 +4,54 @@ let lockWindowId = null;
 let optionsWindowId = null;
 let isCreatingOptions = false;
 let isCreatingLock = false;
+let hasUnlockedInThisSession = false;
+let restorePromise = null;
 
 // 從 storage 載入並驗證上次的視窗 ID，避免 Service Worker 重啟遺失狀態
 async function restoreWindowIds() {
-  const data = await chrome.storage.local.get(["lockWindowId", "optionsWindowId"]);
-  if (data.lockWindowId) {
-    try {
-      const win = await chrome.windows.get(data.lockWindowId);
-      lockWindowId = win.id;
-    } catch (e) {
-      lockWindowId = null;
-      await chrome.storage.local.remove("lockWindowId");
-    }
+  if (!restorePromise) {
+    restorePromise = (async () => {
+      const data = await chrome.storage.local.get(["lockWindowId", "optionsWindowId"]);
+      
+      if (data.optionsWindowId) {
+        try {
+          const win = await chrome.windows.get(data.optionsWindowId);
+          optionsWindowId = win.id;
+        } catch (e) {
+          optionsWindowId = null;
+          await chrome.storage.local.remove("optionsWindowId");
+        }
+      }
+
+      let verifiedLockWindow = false;
+      if (data.lockWindowId) {
+        try {
+          const win = await chrome.windows.get(data.lockWindowId);
+          lockWindowId = win.id;
+          verifiedLockWindow = true;
+        } catch (e) {
+          lockWindowId = null;
+          await chrome.storage.local.remove("lockWindowId");
+        }
+      }
+
+      // 若沒能成功還原或驗證 lockWindowId，主動查詢是否已有現存的 lock.html 分頁（例如 Chrome 啟動還原了上次的鎖定視窗）
+      if (!verifiedLockWindow) {
+        try {
+          const tabs = await chrome.tabs.query({ url: chrome.runtime.getURL("lock.html") });
+          if (tabs && tabs.length > 0) {
+            lockWindowId = tabs[0].windowId;
+            await chrome.storage.local.set({ lockWindowId: lockWindowId });
+          }
+        } catch (e) {
+          console.error("還原鎖定視窗時查詢現存分頁失敗:", e);
+        }
+      }
+    })();
   }
-  if (data.optionsWindowId) {
-    try {
-      const win = await chrome.windows.get(data.optionsWindowId);
-      optionsWindowId = win.id;
-    } catch (e) {
-      optionsWindowId = null;
-      await chrome.storage.local.remove("optionsWindowId");
-    }
-  }
+  return restorePromise;
 }
+
 
 // 初始化與啟動事件監聽
 chrome.runtime.onStartup.addListener(async () => {
@@ -84,8 +109,40 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       sendResponse({ success: true });
     });
     return true;
+  } else if (message.action === "lockWindowLoaded") {
+    handleLockWindowLoaded(sender, sendResponse);
+    return true;
   }
 });
+
+// 處理鎖定視窗載入，清理重複的鎖定視窗
+async function handleLockWindowLoaded(sender, sendResponse) {
+  const windowId = sender.tab ? sender.tab.windowId : null;
+  if (!windowId) {
+    sendResponse({ success: false });
+    return;
+  }
+
+  let hasExisting = false;
+  if (lockWindowId && lockWindowId !== windowId) {
+    try {
+      await chrome.windows.get(lockWindowId);
+      hasExisting = true;
+    } catch (e) {
+      lockWindowId = null;
+      await chrome.storage.local.remove("lockWindowId");
+    }
+  }
+
+  if (hasExisting) {
+    console.log("偵測到重複的鎖定視窗，自動關閉新載入的視窗:", windowId);
+    chrome.windows.remove(windowId).catch(() => {});
+  } else {
+    lockWindowId = windowId;
+    await chrome.storage.local.set({ lockWindowId: lockWindowId });
+  }
+  sendResponse({ success: true });
+}
 
 // 監聽 Alarms
 chrome.alarms.onAlarm.addListener(async (alarm) => {
@@ -130,6 +187,7 @@ chrome.windows.onRemoved.addListener(async (windowId) => {
     if (data.durationMode === "startup") {
       // 若為每次重開瀏覽器都需要輸入密碼，則標記 locked = true
       await chrome.storage.local.set({ locked: true, sessionExpiration: null });
+      hasUnlockedInThisSession = false; // 重設工作階段解鎖狀態
       if (lockWindowId !== null) {
         chrome.windows.remove(lockWindowId).catch(() => {});
         lockWindowId = null;
@@ -142,6 +200,7 @@ chrome.windows.onRemoved.addListener(async (windowId) => {
 // 監聽焦點變更：當鎖定時，若使用者點選其他視窗，強制拉回 (放行 optionsWindowId 設定頁面)
 chrome.windows.onFocusChanged.addListener(async (windowId) => {
   if (windowId === chrome.windows.WINDOW_ID_NONE) return;
+  if (hasUnlockedInThisSession) return;
   
   await restoreWindowIds();
   const data = await chrome.storage.local.get(["locked"]);
@@ -167,7 +226,9 @@ chrome.windows.onFocusChanged.addListener(async (windowId) => {
 
 // 監聽新分頁建立：防堵無關新分頁並執行過期判定與鎖定
 chrome.tabs.onCreated.addListener(async (tab) => {
+  if (hasUnlockedInThisSession) return;
   await restoreWindowIds();
+  if (hasUnlockedInThisSession) return;
   const data = await chrome.storage.local.get([
     "locked",
     "durationMode",
@@ -263,7 +324,15 @@ chrome.tabs.onCreated.addListener(async (tab) => {
 
 // 檢查啟動時的鎖定狀態
 async function checkLockStateOnStartup() {
+  if (hasUnlockedInThisSession) {
+    console.log("[Startup] 此工作階段已完成解鎖，忽略啟動鎖定。");
+    return;
+  }
   await restoreWindowIds();
+  if (hasUnlockedInThisSession) {
+    console.log("[Startup] 此工作階段已完成解鎖，忽略啟動鎖定。");
+    return;
+  }
   const data = await chrome.storage.local.get([
     "passwordHash",
     "durationMode",
@@ -365,6 +434,7 @@ async function checkLockStateOnStartup() {
 
 // 立即鎖定
 async function lockImmediately() {
+  hasUnlockedInThisSession = false;
   await chrome.storage.local.set({ 
     locked: true,
     lockSince: Date.now(), // 記錄鎖定起始時間，供自動重設使用
@@ -377,48 +447,69 @@ async function lockImmediately() {
 // 鎖定瀏覽器並開啟 lock.html 視窗
 async function lockBrowser() {
   if (isCreatingLock) return;
+  isCreatingLock = true; // 立即標記，防範重入與異步競爭
 
-  // 取得所有現有的 normal 與 popup 視窗
-  const windows = await chrome.windows.getAll({ windowTypes: ["normal", "popup"] });
-
-  // 檢查是否有除了鎖定視窗與設定視窗之外的正常網頁瀏覽視窗
-  const hasNormalWindows = windows.some(win => win.id !== lockWindowId && win.id !== optionsWindowId);
-
-  if (!hasNormalWindows) {
-    console.log("當前沒有任何正常的瀏覽器視窗，暫不建立鎖定視窗。");
-    return;
-  }
-
-  // 先嘗試最小化所有現有視窗，以避免內容外洩
-  windows.forEach((win) => {
-    if (win.id !== lockWindowId) {
-      chrome.windows.update(win.id, { state: "minimized" }).catch(() => {});
+  // 雙重檢查：確認是否已有現存的 lock.html 分頁（防範多重事件併發建立）
+  try {
+    const tabs = await chrome.tabs.query({ url: chrome.runtime.getURL("lock.html") });
+    if (tabs && tabs.length > 0) {
+      lockWindowId = tabs[0].windowId;
+      await chrome.storage.local.set({ lockWindowId: lockWindowId });
+      focusLockWindow();
+      isCreatingLock = false; // 恢復狀態
+      return;
     }
-  });
-
-  // 如果已經有鎖定視窗，直接聚焦
-  if (lockWindowId !== null) {
-    focusLockWindow();
-    return;
+  } catch (e) {
+    console.error("lockBrowser 查詢現存鎖定分頁失敗:", e);
   }
 
-  // 創建有系統邊框、最大化 (maximized) 的 lock.html 視窗，提供標題列與關閉按鈕，取消全螢幕
-  isCreatingLock = true;
-  chrome.windows.create(
-    {
-      url: chrome.runtime.getURL("lock.html"),
-      type: "popup",
-      state: "maximized",
-      focused: true
-    },
-    async (win) => {
-      if (win) {
-        lockWindowId = win.id;
-        await chrome.storage.local.set({ lockWindowId: win.id });
+  try {
+    // 取得所有現有的 normal 與 popup 視窗
+    const windows = await chrome.windows.getAll({ windowTypes: ["normal", "popup"] });
+
+    // 檢查是否有除了鎖定視窗與設定視窗之外的正常網頁瀏覽視窗
+    const hasNormalWindows = windows.some(win => win.id !== lockWindowId && win.id !== optionsWindowId);
+
+    if (!hasNormalWindows) {
+      console.log("當前沒有任何正常的瀏覽器視窗，暫不建立鎖定視窗。");
+      isCreatingLock = false; // 恢復狀態
+      return;
+    }
+
+    // 先嘗試最小化所有現有視窗，以避免內容外洩
+    windows.forEach((win) => {
+      if (win.id !== lockWindowId) {
+        chrome.windows.update(win.id, { state: "minimized" }).catch(() => {});
       }
-      isCreatingLock = false;
+    });
+
+    // 如果已經有鎖定視窗，直接聚焦
+    if (lockWindowId !== null) {
+      focusLockWindow();
+      isCreatingLock = false; // 恢復狀態
+      return;
     }
-  );
+
+    // 創建有系統邊框、最大化 (maximized) 的 lock.html 視窗，提供標題列與關閉按鈕，取消全螢幕
+    chrome.windows.create(
+      {
+        url: chrome.runtime.getURL("lock.html"),
+        type: "popup",
+        state: "maximized",
+        focused: true
+      },
+      async (win) => {
+        if (win) {
+          lockWindowId = win.id;
+          await chrome.storage.local.set({ lockWindowId: win.id });
+        }
+        isCreatingLock = false;
+      }
+    );
+  } catch (err) {
+    console.error("lockBrowser 發生錯誤:", err);
+    isCreatingLock = false;
+  }
 }
 
 // 聚焦鎖定視窗
@@ -437,6 +528,7 @@ function focusLockWindow() {
 
 // 解鎖瀏覽器
 async function unlockBrowser(expirationTime) {
+  hasUnlockedInThisSession = true;
   await chrome.storage.local.set({ 
     locked: false,
     lockSince: null,
